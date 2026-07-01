@@ -32,7 +32,7 @@
   .xlink{display:inline-block;margin-top:16px;font-size:13px;font-family:var(--mono);color:var(--accent2);text-decoration:none;border:1px solid var(--line2);padding:7px 13px;border-radius:8px}
   .xlink:hover{border-color:var(--accent2)}
 
-  .controlbar{position:sticky;top:0;z-index:500;background:rgba(14,11,10,.93);backdrop-filter:blur(10px);border-bottom:1px solid var(--line2);padding:14px 0}
+  .controlbar{position:sticky;top:0;z-index:500;background:#0e0b0a;border-bottom:1px solid var(--line2);padding:14px 0}
   .cbrow{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
   .field{display:flex;flex-direction:column;gap:5px}
   .field label{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
@@ -55,6 +55,8 @@
   #status.show{display:block}
   #status.load{background:#241a10;border:1px solid #4a3410;color:#ffd9ad}
   #status.err{background:#3a0d14;border:1px solid #5e1822;color:#ff9aa6}
+  #status.ok{background:#122a1c;border:1px solid #1f4a30;color:#a9e5c4}
+  .headline{scroll-margin-top:170px}
   .spin{display:inline-block;width:13px;height:13px;border:2px solid #4a3410;border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:8px}
   @keyframes sp{to{transform:rotate(360deg)}}
 
@@ -251,10 +253,11 @@ function syncSvc(){document.getElementById('svc-ems').classList.toggle('on',serv
 const loadBtn=document.getElementById('load'),statusEl=document.getElementById('status');
 function setStatus(kind,html){statusEl.className=kind?('show '+kind):'';statusEl.innerHTML=html;}
 
-async function load(){
+async function load(auto){
   const code=pctSel.value,date=document.getElementById('date').value;
   if(!date){setStatus('err','Please choose a date.');return;}
-  loadBtn.disabled=true;document.getElementById('app').classList.add('dim');document.getElementById('stats').style.display='none';
+  loadBtn.disabled=true;loadBtn.textContent='Loading…';
+  document.getElementById('app').classList.add('dim');document.getElementById('stats').style.display='none';
   setStatus('load',`<span class="spin"></span>Querying FDNY ${service==='ems'?'EMS':'Fire'} dispatch — ${ordinal(+code)} Precinct, ${date}…`);
   const sel = service==='ems'
     ? 'incident_datetime,initial_call_type,initial_severity_level_code,dispatch_response_seconds_qy,incident_travel_tm_seconds_qy,incident_response_seconds_qy,valid_incident_rspns_time_indc,first_on_scene_datetime,first_hosp_arrival_datetime,incident_close_datetime'
@@ -278,8 +281,11 @@ async function load(){
         onscene:r.first_on_scene_datetime, hosp:r.first_hosp_arrival_datetime, close:r.incident_close_datetime};
     });
     if(!rows.length){setStatus('err',`No FDNY ${service==='ems'?'EMS':'Fire'} runs for the ${ordinal(+code)} Precinct on ${date}. Try another day or service.`);return;}
-    setStatus('','');
-    render(code,date);
+    try{ render(code,date); }
+    catch(re){ setStatus('err','The data loaded, but the page failed to draw it: '+re.message); return; }
+    setStatus('ok',`✓ Loaded ${rows.length} ${service==='ems'?'EMS':'fire'} runs — ${ordinal(+code)} Precinct, ${date}. Results below.`);
+    clearTimeout(window.__okT); window.__okT=setTimeout(()=>{ if(statusEl.classList.contains('ok')) setStatus('',''); },5000);
+    if(!auto) document.getElementById('headline').scrollIntoView({behavior:'smooth',block:'start'});
   }catch(e){
     const msg = e.name==='AbortError'
       ? "NYC Open Data didn't respond within 15 seconds. This is almost always a network, VPN or firewall block on your side — not this page. Try a different network (like your phone's data)."
@@ -287,7 +293,7 @@ async function load(){
     setStatus('err',msg);
   }finally{
     clearTimeout(to);
-    loadBtn.disabled=false;
+    loadBtn.disabled=false; loadBtn.textContent='Load the day';
     document.getElementById('app').classList.remove('dim'); // never leave the page stuck dimmed
   }
 }
@@ -401,10 +407,10 @@ function buildResponse(){
 }
 
 document.getElementById('aibtn').onclick=()=>document.getElementById('aipop').classList.toggle('show');
-loadBtn.onclick=load;
+loadBtn.onclick=()=>load();
 document.getElementById('rand').onclick=()=>{const code=ALL_CODES[Math.floor(Math.random()*ALL_CODES.length)];const day=1+Math.floor(Math.random()*450);const d=new Date(2025,0,day);if(d>new Date('2026-03-31'))d.setTime(new Date('2026-03-31').getTime());pctSel.value=code;document.getElementById('date').value=d.toISOString().slice(0,10);load();};
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement.tagName!=='BUTTON')load();});
-load();
+load(true);
 </script>
 </body>
 </html>
