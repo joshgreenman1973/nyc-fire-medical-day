@@ -261,8 +261,9 @@ async function load(){
     : 'incident_datetime,incident_classification,incident_classification_group,alarm_level_index_description,engines_assigned_quantity,ladders_assigned_quantity,dispatch_response_seconds_qy,incident_travel_tm_seconds_qy,incident_response_seconds_qy,valid_incident_rspns_time_indc,first_on_scene_datetime,incident_close_datetime';
   const where=`policeprecinct='${code}' AND incident_datetime between '${date}T00:00:00' and '${date}T23:59:59'`;
   const url=`https://data.cityofnewyork.us/resource/${DS[service]}.json?$select=${encodeURIComponent(sel)}&$where=${encodeURIComponent(where)}&$limit=20000&$order=incident_datetime`;
+  const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(),15000);
   try{
-    const res=await fetch(url); if(!res.ok) throw new Error('HTTP '+res.status);
+    const res=await fetch(url,{signal:ctrl.signal}); if(!res.ok) throw new Error('HTTP '+res.status);
     const raw=await res.json();
     rows=raw.map(r=>{
       const t=(r.incident_datetime||'').slice(11,19), h=+t.slice(0,2)||0;
@@ -276,11 +277,19 @@ async function load(){
         resp:valid?secMin(r.incident_response_seconds_qy):null,
         onscene:r.first_on_scene_datetime, hosp:r.first_hosp_arrival_datetime, close:r.incident_close_datetime};
     });
-    if(!rows.length){setStatus('err',`No FDNY ${service==='ems'?'EMS':'Fire'} runs for the ${ordinal(+code)} Precinct on ${date}. Try another day or service.`);loadBtn.disabled=false;return;}
+    if(!rows.length){setStatus('err',`No FDNY ${service==='ems'?'EMS':'Fire'} runs for the ${ordinal(+code)} Precinct on ${date}. Try another day or service.`);return;}
     setStatus('','');
     render(code,date);
-  }catch(e){setStatus('err','Could not reach NYC Open Data ('+e.message+'). Try again.');}
-  finally{loadBtn.disabled=false;}
+  }catch(e){
+    const msg = e.name==='AbortError'
+      ? "NYC Open Data didn't respond within 15 seconds. This is almost always a network, VPN or firewall block on your side — not this page. Try a different network (like your phone's data)."
+      : 'Could not reach NYC Open Data ('+e.message+'). Try again.';
+    setStatus('err',msg);
+  }finally{
+    clearTimeout(to);
+    loadBtn.disabled=false;
+    document.getElementById('app').classList.remove('dim'); // never leave the page stuck dimmed
+  }
 }
 
 function render(code,date){
