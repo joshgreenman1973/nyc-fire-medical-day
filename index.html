@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A day on the fire &amp; medical radio — NYC FDNY explorer</title>
+<style>
+  :root{
+    --bg:#0e0b0a; --panel:#1a1512; --panel2:#140f0d; --ink:#f3ece7; --mut:#b39f93;
+    --line:#2a211d; --line2:#3a2d27; --accent:#ff8a5b; --accent2:#ffb454;
+    --ems:#3ad29f; --fire:#ff5e57;
+    --s1:#ff2d55; --s2:#ff5e57; --s3:#ff9f1c; --s4:#ffd23f; --s5:#8fce8f; --s6:#5aa9ff; --s7:#8f9db0; --s8:#6b7a8c;
+    --mono:"SFMono-Regular",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 18px}
+  a{color:var(--accent2)}
+  h1,h2,h3{font-weight:650;letter-spacing:-.01em;line-height:1.15;margin:0}
+  .mono{font-family:var(--mono)} .mut{color:var(--mut)}
+
+  header.hero{border-bottom:1px solid var(--line);background:
+    radial-gradient(1200px 400px at 75% -120px,rgba(255,94,87,.12),transparent 60%),
+    radial-gradient(900px 360px at 10% -100px,rgba(255,180,84,.10),transparent 60%);}
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:9px;margin:30px 0 14px}
+  .kicker .dot{width:8px;height:8px;border-radius:50%;background:var(--fire);box-shadow:0 0 0 0 rgba(255,94,87,.7);animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,94,87,.6)}70%{box-shadow:0 0 0 9px rgba(255,94,87,0)}100%{box-shadow:0 0 0 0 rgba(255,94,87,0)}}
+  h1.title{font-size:clamp(28px,5vw,48px);margin-bottom:12px}
+  .sub{font-size:clamp(15px,2.1vw,19px);color:var(--mut);max-width:700px}
+  .xlink{display:inline-block;margin-top:16px;font-size:13px;font-family:var(--mono);color:var(--accent2);text-decoration:none;border:1px solid var(--line2);padding:7px 13px;border-radius:8px}
+  .xlink:hover{border-color:var(--accent2)}
+
+  .controlbar{position:sticky;top:0;z-index:500;background:rgba(14,11,10,.93);backdrop-filter:blur(10px);border-bottom:1px solid var(--line2);padding:14px 0}
+  .cbrow{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+  select,input[type=date]{background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:9px;padding:10px 12px;font-size:14px;font-family:var(--sans);min-height:42px}
+  select:focus,input:focus{outline:none;border-color:var(--accent)}
+  select{min-width:280px}
+  .seg{display:flex;gap:0;border:1px solid var(--line2);border-radius:9px;overflow:hidden}
+  .seg button{background:var(--panel2);color:var(--mut);border:none;padding:0 16px;height:42px;font-size:13px;font-family:var(--mono);cursor:pointer}
+  .seg button.on{color:#1a0f0a;font-weight:650}
+  .seg button#svc-ems.on{background:var(--ems)} .seg button#svc-fire.on{background:var(--fire);color:#fff}
+  .loadbtn{background:var(--accent);color:#1a0f0a;border:none;border-radius:9px;padding:0 22px;height:42px;font-size:14px;font-weight:650;cursor:pointer}
+  .loadbtn:hover{filter:brightness(1.08)} .loadbtn:disabled{opacity:.5;cursor:wait}
+  .randbtn{background:var(--panel2);color:var(--mut);border:1px solid var(--line2);border-radius:9px;height:42px;padding:0 14px;font-size:13px;cursor:pointer;font-family:var(--mono)}
+  .randbtn:hover{color:var(--ink);border-color:var(--accent)}
+  .cbnote{font-size:11.5px;color:var(--mut);font-family:var(--mono);margin-top:8px}
+
+  .headline{padding:18px 0 0;font-size:14px;color:var(--mut);font-family:var(--mono);display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
+  .headline b{color:var(--ink)}
+  #status{font-family:var(--mono);font-size:14px;padding:14px 16px;border-radius:10px;margin:18px 0 0;display:none}
+  #status.show{display:block}
+  #status.load{background:#241a10;border:1px solid #4a3410;color:#ffd9ad}
+  #status.err{background:#3a0d14;border:1px solid #5e1822;color:#ff9aa6}
+  .spin{display:inline-block;width:13px;height:13px;border:2px solid #4a3410;border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:8px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:18px}
+  .stat{background:var(--panel2);padding:18px}
+  .stat .n{font-size:clamp(24px,4vw,38px);font-weight:680;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .stat .l{font-size:12px;color:var(--mut);margin-top:4px}
+  .stat .n.hot{color:var(--fire)} .stat .n.acc{color:var(--accent)} .stat .n.ok{color:var(--ems)}
+
+  #app.dim{opacity:.35;pointer-events:none}
+  section{padding:42px 0;border-bottom:1px solid var(--line)}
+  .sec-h{font-size:13px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+  .sec-t{font-size:clamp(21px,3.2vw,28px);margin-bottom:10px}
+  .sec-d{color:var(--mut);max-width:720px;margin-bottom:22px}
+
+  .hours{display:flex;align-items:flex-end;gap:3px;height:200px;margin-top:8px}
+  .hbar{flex:1;background:linear-gradient(180deg,var(--accent),#7a3d1f);border-radius:3px 3px 0 0;position:relative;min-height:2px;opacity:.9}
+  .hbar .hv{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;color:var(--mut)}
+  .hlabels{display:flex;gap:3px;margin-top:6px}
+  .hlabels span{flex:1;text-align:center;font-family:var(--mono);font-size:9.5px;color:var(--mut)}
+
+  .bar-row{display:grid;grid-template-columns:190px 1fr 64px;align-items:center;gap:12px;margin:7px 0}
+  .bar-row .nm{font-size:13px;text-align:right;color:var(--ink)}
+  .bar-track{height:22px;background:var(--panel2);border-radius:5px;overflow:hidden;border:1px solid var(--line)}
+  .bar-fill{height:100%;border-radius:5px 0 0 5px;transition:width .7s cubic-bezier(.2,.7,.2,1)}
+  .bar-row .vl{font-family:var(--mono);font-size:12px;color:var(--mut);font-variant-numeric:tabular-nums}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+  .subh{font-size:14px;margin-bottom:12px;color:var(--mut);font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em}
+
+  .pipe{display:flex;flex-direction:column;gap:8px}
+  .pstep{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center}
+  .pstep .pl{font-size:13.5px} .pstep .pl small{display:block;color:var(--mut);font-size:11.5px;font-family:var(--mono);margin-top:2px}
+  .pstep .pn{font-family:var(--mono);font-size:20px;font-weight:680;font-variant-numeric:tabular-nums}
+  table.tt{width:100%;border-collapse:collapse;font-size:13px}
+  table.tt th,table.tt td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:right}
+  table.tt th:first-child,table.tt td:first-child{text-align:left}
+  table.tt th{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);font-weight:600}
+  table.tt td{font-variant-numeric:tabular-nums} table.tt td.big{font-family:var(--mono);font-weight:600;color:var(--ink)}
+  .sev-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:middle}
+  .hint{font-size:12px;color:var(--mut);margin-top:12px;font-style:italic}
+
+  .methodbox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:22px 24px}
+  .methodbox h3{font-size:15px;margin-bottom:6px} .methodbox ul{margin:0 0 16px;padding-left:18px;color:var(--mut);font-size:14px}
+  .methodbox li{margin:6px 0} .methodbox b{color:var(--ink)}
+  .aibtn{font-family:var(--mono);font-size:11.5px;background:#3a0d14;color:#ff9aa6;border:1px solid #5e1822;padding:8px 14px;border-radius:8px;cursor:pointer}
+  .aipop{display:none;margin-top:14px;background:#241a10;border:1px solid #4a3410;border-radius:12px;padding:20px 22px;color:#ffe6cc;font-size:13.5px}
+  .aipop.show{display:block} .aipop h3{color:#fff;font-size:14px;margin-bottom:8px} .aipop ul{margin:0;padding-left:18px} .aipop li{margin:5px 0}
+  footer{padding:34px 0 60px;color:var(--mut);font-size:12.5px}
+  @media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr;gap:30px}.bar-row{grid-template-columns:130px 1fr 54px}select{min-width:0;width:100%}.field{flex:1 1 100%}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker"><span class="dot"></span> Live from NYC Open Data · FDNY</div>
+    <h1 class="title">A day on the fire &amp; medical radio</h1>
+    <p class="sub">Pick any New York City police precinct and any day, and this pulls every FDNY run there that day — ambulances and fire units — from the city's own dispatch records, and rebuilds the timeline, the call mix and the response-time breakdown. The companion to the police version.</p>
+    <a class="xlink" href="https://joshgreenman1973.github.io/nyc-precinct-day/">← See the police 911 version of this day</a>
+  </div>
+</header>
+
+<div class="controlbar">
+  <div class="wrap">
+    <div class="cbrow">
+      <div class="field"><label for="pct">Precinct</label><select id="pct"></select></div>
+      <div class="field"><label for="date">Date</label><input type="date" id="date" min="2020-01-01" max="2026-03-31" value="2025-12-17"></div>
+      <div class="field"><label>Service</label>
+        <div class="seg"><button id="svc-ems" class="on">🚑 EMS (medical)</button><button id="svc-fire">🚒 Fire</button></div>
+      </div>
+      <button class="loadbtn" id="load">Load the day</button>
+      <button class="randbtn" id="rand" title="Random precinct and day">🎲 Surprise me</button>
+    </div>
+    <div class="cbnote">Data available through March 31, 2026. Source: FDNY EMS &amp; Fire Incident Dispatch Data, NYC Open Data.</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="headline" id="headline"></div>
+  <div id="status"></div>
+  <div class="stats" id="stats" style="display:none">
+    <div class="stat"><div class="n" id="s-total">—</div><div class="l" id="s-total-l">runs in 24 hours</div></div>
+    <div class="stat"><div class="n acc" id="s-gap">—</div><div class="l">average time between runs</div></div>
+    <div class="stat"><div class="n ok" id="s-resp">—</div><div class="l" id="s-resp-l">median response</div></div>
+    <div class="stat"><div class="n hot" id="s-key">—</div><div class="l" id="s-key-l">—</div></div>
+  </div>
+</div>
+
+<div id="app">
+<section>
+  <div class="wrap">
+    <div class="sec-h">The rhythm of the day</div>
+    <h2 class="sec-t">When the runs came in</h2>
+    <p class="sec-d">FDNY runs by hour of the day, for the precinct and service you picked.</p>
+    <div class="hours" id="hours"></div>
+    <div class="hlabels" id="hlabels"></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-h" id="mix-h">What the runs were</div>
+    <h2 class="sec-t" id="mix-t">The call mix</h2>
+    <p class="sec-d" id="mix-d"></p>
+    <div class="grid2">
+      <div><h3 class="subh" id="mixA-h"></h3><div id="mixA"></div></div>
+      <div><h3 class="subh" id="mixB-h"></h3><div id="mixB"></div></div>
+    </div>
+  </div>
+</section>
+
+<section style="border-bottom:none">
+  <div class="wrap">
+    <div class="sec-h">The response</div>
+    <h2 class="sec-t">How fast help arrived</h2>
+    <p class="sec-d" id="resp-d">How far each run travelled through dispatch, and how long each leg took. Medians are shown because a long tail of low-acuity calls left waiting pulls the averages far higher.</p>
+    <div class="grid2">
+      <div><h3 class="subh">The pipeline (median)</h3><div class="pipe" id="pipe"></div></div>
+      <div><h3 class="subh" id="respTab-h">Response by urgency</h3><table class="tt"><tbody id="respTab"></tbody></table><div class="hint" id="resp-note"></div></div>
+    </div>
+  </div>
+</section>
+
+<section style="border-bottom:none">
+  <div class="wrap">
+    <div class="sec-h">Methodology</div>
+    <h2 class="sec-t">How this works — and its limits</h2>
+    <div class="methodbox">
+      <h3>Source &amp; method</h3>
+      <ul>
+        <li><b>Data:</b> FDNY <b>EMS Incident Dispatch Data</b> (<span class="mono">76xm-jjuj</span>) and <b>Fire Incident Dispatch Data</b> (<span class="mono">8m42-w767</span>), NYC Open Data. Both carry a <span class="mono">policeprecinct</span> field, so runs filter to the same precincts as the police version. Queried live for your selection.</li>
+        <li><b>Coverage:</b> through March 31, 2026 — fresher than the police calls feed (which ends Dec 2025), so days after that have no police counterpart to compare.</li>
+        <li id="m-current"></li>
+      </ul>
+      <h3>Definitions &amp; caveats</h3>
+      <ul>
+        <li><b>No map.</b> FDNY dispatch records are <b>not geocoded to a point</b> (medical privacy); location is ZIP + precinct only. So this companion leads with time and response, not a dot map.</li>
+        <li><b>Response time</b> = incident-created to first-unit-on-scene, using FDNY's own response-second fields, for runs FDNY flags as having a valid response time.</li>
+        <li><b>EMS urgency (severity 1–8):</b> 1 is most life-threatening, 8 least. This is FDNY's assignment; the data bears it out — severity 1–3 runs reach the scene in single-digit-to-low-double-digit minutes, while 4+ can wait far longer. “Life-threatening” here means severity 1–3.</li>
+        <li><b>EMS call types</b> use FDNY's initial call-type codes; plain-language labels are shown for the common ones, the raw code otherwise.</li>
+        <li><b>Medians, not means</b> — a long tail of low-acuity runs badly skews the averages.</li>
+        <li><b>No outcomes.</b> These records carry response and disposition timing, but no patient outcome, and are not linked to the police calls at the record level.</li>
+      </ul>
+      <button class="aibtn" id="aibtn">⚠ AI caution — read before sharing</button>
+      <div class="aipop" id="aipop">
+        <h3>Made with AI assistance</h3>
+        <ul>
+          <li><b>Verified:</b> every figure is computed in your browser from the raw FDNY records returned for your selection — nothing is estimated or cached.</li>
+          <li><b>Verified:</b> the EMS severity scale direction was checked against actual response times in the data before labeling.</li>
+          <li><b>Not independently verified:</b> the accuracy of FDNY's underlying records, including how each run was coded and timestamped.</li>
+          <li><b>Judgment calls:</b> the plain-language EMS call-type labels and the “life-threatening = severity 1–3” grouping are editorial. A single day is a snapshot, not a typical pattern.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+</div>
+
+<footer><div class="wrap">Built from NYC Open Data · FDNY EMS (76xm-jjuj) &amp; Fire (8m42-w767) Incident Dispatch Data · Companion to the <a href="https://joshgreenman1973.github.io/nyc-precinct-day/">police 911 explorer</a>. No point-location or patient-outcome data is available in these sources.</div></footer>
+
+<script>
+const PRECINCTS=[
+ ['Manhattan',[[1,'Financial District / Battery Park'],[5,'Chinatown / Little Italy'],[6,'West Village'],[7,'Lower East Side'],[9,'East Village'],[10,'Chelsea / Hudson Yards'],[13,'Gramercy / Flatiron'],[14,'Midtown South / Times Square'],[17,'Murray Hill / Turtle Bay'],[18,"Midtown North / Hell's Kitchen"],[19,'Upper East Side'],[20,'Upper West Side'],[22,'Central Park'],[23,'East Harlem South'],[24,'Manhattan Valley'],[25,'East Harlem North'],[26,'Morningside Heights'],[28,'Central Harlem South'],[30,'Hamilton Heights'],[32,'Central Harlem North'],[33,'Washington Heights South'],[34,'Washington Heights / Inwood']]],
+ ['Bronx',[[40,'Mott Haven / Melrose'],[41,'Hunts Point'],[42,'Morrisania / Claremont'],[43,'Soundview / Parkchester'],[44,'Highbridge / Concourse'],[45,'Throgs Neck / Co-op City'],[46,'Fordham / University Heights'],[47,'Wakefield / Williamsbridge'],[48,'Belmont / East Tremont'],[49,'Pelham Parkway / Morris Park'],[50,'Riverdale / Kingsbridge'],[52,'Bedford Park / Norwood']]],
+ ['Brooklyn',[[60,'Coney Island'],[61,'Sheepshead Bay / Gravesend'],[62,'Bensonhurst / Bath Beach'],[63,'Flatlands / Mill Basin'],[66,'Borough Park'],[67,'East Flatbush'],[68,'Bay Ridge / Dyker Heights'],[69,'Canarsie'],[70,'Flatbush / Midwood'],[71,'Crown Heights South'],[72,'Sunset Park / Windsor Terrace'],[73,'Brownsville'],[75,'East New York / Cypress Hills'],[76,'Red Hook / Carroll Gardens'],[77,'Prospect Heights / Crown Heights'],[78,'Park Slope'],[79,'Bedford-Stuyvesant South'],[81,'Stuyvesant Heights'],[83,'Bushwick'],[84,'Downtown Brooklyn / Brooklyn Heights'],[88,'Fort Greene / Clinton Hill'],[90,'Williamsburg South'],[94,'Greenpoint']]],
+ ['Queens',[[100,'Rockaway'],[101,'Far Rockaway'],[102,'Richmond Hill / Woodhaven'],[103,'Jamaica'],[104,'Ridgewood / Glendale / Maspeth'],[105,'Queens Village / Rosedale'],[106,'Ozone Park / Howard Beach'],[107,'Fresh Meadows / Briarwood'],[108,'Long Island City / Sunnyside'],[109,'Flushing / College Point'],[110,'Elmhurst / Corona'],[111,'Bayside / Douglaston'],[112,'Forest Hills / Rego Park'],[113,'St. Albans / Springfield Gardens'],[114,'Astoria / Long Island City'],[115,'Jackson Heights / East Elmhurst']]],
+ ['Staten Island',[[120,'St. George / Stapleton'],[121,'Graniteville / Mariners Harbor'],[122,'New Dorp / South Beach'],[123,'Tottenville / Great Kills']]],
+];
+const PCT_NAME={},PCT_BORO={},ALL_CODES=[];
+PRECINCTS.forEach(([boro,list])=>list.forEach(([c,n])=>{PCT_NAME[c]=n;PCT_BORO[c]=boro;ALL_CODES.push(c);}));
+const pctSel=document.getElementById('pct');
+PRECINCTS.forEach(([boro,list])=>{const og=document.createElement('optgroup');og.label=boro;list.forEach(([c,n])=>{const o=document.createElement('option');o.value=c;o.textContent=`${c}th — ${n}`;og.appendChild(o);});pctSel.appendChild(og);});
+pctSel.value='75';
+function ordinal(c){const s=['th','st','nd','rd'],v=c%100;return c+(s[(v-20)%10]||s[v]||s[0]);}
+const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+const EMS_LABELS={INJURY:'Injury',SICK:'Sick / illness',EDPC:'Psychiatric',EDP:'Psychiatric',CARD:'Cardiac condition',DIFFBR:'Difficulty breathing',ABDPN:'Abdominal pain',UNKNOW:'Unknown condition',UNC:'Unconscious',UNCON:'Unconscious',DRUG:'Drug / overdose',MVA:'Vehicle accident',INJMAJ:'Major injury',INJMIN:'Minor injury',CVA:'Stroke',CVAC:'Stroke',CHOKE:'Choking',ALTMEN:'Altered mental status',ARREST:'Cardiac arrest',RESPIR:'Respiratory distress',STNDBY:'Standby',STANDBY:'Standby',SHOT:'Shooting',STAB:'Stabbing',DROWN:'Drowning',ALLERG:'Allergic reaction',DIABET:'Diabetic',ASTHMB:'Asthma',ASTHMA:'Asthma',SEIZ:'Seizure',SEIZR:'Seizure',SEIZUR:'Seizure',INBLED:'Bleeding',ANAPH:'Anaphylaxis'};
+function emsLabel(code){return EMS_LABELS[code]||code;}
+const SEV={1:'--s1',2:'--s2',3:'--s3',4:'--s4',5:'--s5',6:'--s6',7:'--s7',8:'--s8'};
+
+function median(a){if(!a.length)return null;const s=[...a].sort((x,y)=>x-y);const m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2;}
+function pct90(a){if(!a.length)return null;const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.floor(0.9*s.length))];}
+function fmt(v){return v==null?'—':v.toFixed(1)+' min';}
+function secMin(v){const n=+v;return (isFinite(n)&&n>=0&&n<24*3600)?n/60:null;}
+function dtMin(a,b){if(a&&b){const d=(new Date(b)-new Date(a))/60000;return (d>=0&&d<24*60)?d:null;}return null;}
+
+let rows=[], service='ems';
+const DS={ems:'76xm-jjuj',fire:'8m42-w767'};
+
+document.getElementById('svc-ems').onclick=()=>{service='ems';syncSvc();load();};
+document.getElementById('svc-fire').onclick=()=>{service='fire';syncSvc();load();};
+function syncSvc(){document.getElementById('svc-ems').classList.toggle('on',service==='ems');document.getElementById('svc-fire').classList.toggle('on',service==='fire');}
+
+const loadBtn=document.getElementById('load'),statusEl=document.getElementById('status');
+function setStatus(kind,html){statusEl.className=kind?('show '+kind):'';statusEl.innerHTML=html;}
+
+async function load(){
+  const code=pctSel.value,date=document.getElementById('date').value;
+  if(!date){setStatus('err','Please choose a date.');return;}
+  loadBtn.disabled=true;document.getElementById('app').classList.add('dim');document.getElementById('stats').style.display='none';
+  setStatus('load',`<span class="spin"></span>Querying FDNY ${service==='ems'?'EMS':'Fire'} dispatch — ${ordinal(+code)} Precinct, ${date}…`);
+  const sel = service==='ems'
+    ? 'incident_datetime,initial_call_type,initial_severity_level_code,dispatch_response_seconds_qy,incident_travel_tm_seconds_qy,incident_response_seconds_qy,valid_incident_rspns_time_indc,first_on_scene_datetime,first_hosp_arrival_datetime,incident_close_datetime'
+    : 'incident_datetime,incident_classification,incident_classification_group,alarm_level_index_description,engines_assigned_quantity,ladders_assigned_quantity,dispatch_response_seconds_qy,incident_travel_tm_seconds_qy,incident_response_seconds_qy,valid_incident_rspns_time_indc,first_on_scene_datetime,incident_close_datetime';
+  const where=`policeprecinct='${code}' AND incident_datetime between '${date}T00:00:00' and '${date}T23:59:59'`;
+  const url=`https://data.cityofnewyork.us/resource/${DS[service]}.json?$select=${encodeURIComponent(sel)}&$where=${encodeURIComponent(where)}&$limit=20000&$order=incident_datetime`;
+  try{
+    const res=await fetch(url); if(!res.ok) throw new Error('HTTP '+res.status);
+    const raw=await res.json();
+    rows=raw.map(r=>{
+      const t=(r.incident_datetime||'').slice(11,19), h=+t.slice(0,2)||0;
+      const valid=r.valid_incident_rspns_time_indc==='Y';
+      return {h, dt:r.incident_datetime, valid,
+        sev:+r.initial_severity_level_code||null, ct:r.initial_call_type||'—',
+        grp:r.incident_classification_group||'—', cls:r.incident_classification||'—',
+        alarm:r.alarm_level_index_description||'', eng:+r.engines_assigned_quantity||0, lad:+r.ladders_assigned_quantity||0,
+        disp:valid?secMin(r.dispatch_response_seconds_qy):null,
+        trav:valid?secMin(r.incident_travel_tm_seconds_qy):null,
+        resp:valid?secMin(r.incident_response_seconds_qy):null,
+        onscene:r.first_on_scene_datetime, hosp:r.first_hosp_arrival_datetime, close:r.incident_close_datetime};
+    });
+    if(!rows.length){setStatus('err',`No FDNY ${service==='ems'?'EMS':'Fire'} runs for the ${ordinal(+code)} Precinct on ${date}. Try another day or service.`);loadBtn.disabled=false;return;}
+    setStatus('','');
+    render(code,date);
+  }catch(e){setStatus('err','Could not reach NYC Open Data ('+e.message+'). Try again.');}
+  finally{loadBtn.disabled=false;}
+}
+
+function render(code,date){
+  document.getElementById('app').classList.remove('dim');
+  const name=PCT_NAME[code]||('Precinct '+code),boro=PCT_BORO[code]||'';
+  const dStr=new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  const svcLabel=service==='ems'?'EMS (medical)':'Fire';
+  document.getElementById('headline').innerHTML=`<span><b>${ordinal(+code)} Precinct</b> · ${name} (${boro})</span><span><b>${dStr}</b></span><span><b>${svcLabel}</b> · ${rows.length} runs</span>`;
+  document.getElementById('m-current').innerHTML=`<b>Your selection:</b> FDNY ${svcLabel} runs in the ${ordinal(+code)} Precinct (${name}), ${dStr} — ${rows.length} runs, ${rows.filter(r=>r.valid).length} with a valid response time.`;
+  document.getElementById('stats').style.display='';
+  service==='ems'?renderEMS(rows):renderFire(rows);
+  buildHours();
+  buildResponse();
+}
+
+function stat(id,val){document.getElementById(id).textContent=val;}
+function renderEMS(R){
+  const life=R.filter(r=>r.sev&&r.sev<=3), lifeResp=life.filter(r=>r.resp!=null).map(r=>r.resp);
+  stat('s-total',R.length); document.getElementById('s-total-l').textContent='ambulance runs in 24 hours';
+  stat('s-gap','1 / '+(24*60/R.length).toFixed(1)+' min');
+  document.getElementById('s-resp-l').textContent='median response · life-threatening';
+  stat('s-resp',lifeResp.length?median(lifeResp).toFixed(1)+' min':'—');
+  document.getElementById('s-key-l').textContent='life-threatening (severity 1–3)';
+  stat('s-key',life.length+' · '+Math.round(life.length/R.length*100)+'%');
+  // mix: severity + call types
+  document.getElementById('mix-t').textContent='Who called, and how urgent';
+  document.getElementById('mix-d').textContent='Every ambulance run by FDNY urgency level (1 = life-threatening, 8 = least urgent) and by call type. Most days are dominated by the middle of the scale.';
+  document.getElementById('mixA-h').textContent='By urgency (severity)';
+  document.getElementById('mixB-h').textContent='By call type';
+  const sevCounts={}; R.forEach(r=>{if(r.sev)sevCounts[r.sev]=(sevCounts[r.sev]||0)+1;});
+  const sevArr=Object.keys(sevCounts).map(Number).sort((a,b)=>a-b).map(s=>[`Severity ${s}${s<=3?' · life-threat.':''}`,sevCounts[s],cssv(SEV[s]||'--s8')]);
+  bars('mixA',sevArr,R.length);
+  const ctC={}; R.forEach(r=>{const l=emsLabel(r.ct);ctC[l]=(ctC[l]||0)+1;});
+  const ctArr=Object.entries(ctC).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n,v])=>[n,v,cssv('--ems')]);
+  bars('mixB',ctArr,R.length,true);
+}
+function renderFire(R){
+  const struct=R.filter(r=>/structural/i.test(r.grp)).length;
+  const units=R.reduce((a,r)=>a+r.eng+r.lad,0);
+  const respAll=R.filter(r=>r.resp!=null).map(r=>r.resp);
+  stat('s-total',R.length); document.getElementById('s-total-l').textContent='fire-unit runs in 24 hours';
+  stat('s-gap','1 / '+(24*60/R.length).toFixed(1)+' min');
+  document.getElementById('s-resp-l').textContent='median response (all runs)';
+  stat('s-resp',respAll.length?median(respAll).toFixed(1)+' min':'—');
+  document.getElementById('s-key-l').textContent='structural fires';
+  stat('s-key',struct);
+  document.getElementById('mix-t').textContent='What the fire units ran to';
+  document.getElementById('mix-d').textContent='Most FDNY fire-unit runs are not fires — engine and ladder companies are dispatched to medical calls, alarms and emergencies far more often than to structural fires.';
+  document.getElementById('mixA-h').textContent='By incident group';
+  document.getElementById('mixB-h').textContent='Units dispatched';
+  const grpC={}; R.forEach(r=>{grpC[r.grp]=(grpC[r.grp]||0)+1;});
+  const grpArr=Object.entries(grpC).sort((a,b)=>b[1]-a[1]).map(([n,v])=>[n,v,/structural/i.test(n)?cssv('--fire'):cssv('--accent')]);
+  bars('mixA',grpArr,R.length);
+  const totalEng=R.reduce((a,r)=>a+r.eng,0),totalLad=R.reduce((a,r)=>a+r.lad,0);
+  const mx=Math.max(totalEng,totalLad,1);
+  bars('mixB',[['Engine companies',totalEng,cssv('--accent')],['Ladder companies',totalLad,cssv('--accent2')]],mx,false,true);
+}
+function bars(id,arr,denom,pctByCount,rawVal){
+  const el=document.getElementById(id);el.innerHTML='';
+  const mx=Math.max(...arr.map(d=>d[1]),1);
+  arr.forEach(([n,v,color])=>{
+    const row=document.createElement('div');row.className='bar-row';
+    const label = rawVal ? v : (v+' · '+(v/denom*100).toFixed(0)+'%');
+    row.innerHTML=`<div class="nm">${n}</div><div class="bar-track"><div class="bar-fill" style="width:0;background:${color}"></div></div><div class="vl">${label}</div>`;
+    el.appendChild(row);
+    requestAnimationFrame(()=>setTimeout(()=>{row.querySelector('.bar-fill').style.width=(v/mx*100)+'%';},60));
+  });
+}
+
+function buildHours(){
+  const hc=new Array(24).fill(0); rows.forEach(r=>hc[r.h]++);
+  const mx=Math.max(...hc,1);
+  const he=document.getElementById('hours'),hl=document.getElementById('hlabels');he.innerHTML='';hl.innerHTML='';
+  hc.forEach((n,h)=>{const b=document.createElement('div');b.className='hbar';b.style.height=(n/mx*100)+'%';b.innerHTML=`<span class="hv">${n}</span>`;b.title=`${String(h).padStart(2,'0')}:00 — ${n} runs`;he.appendChild(b);const s=document.createElement('span');s.textContent=(h%3===0)?String(h).padStart(2,'0'):'';hl.appendChild(s);});
+}
+
+function buildResponse(){
+  const R=rows, N=R.length, valid=R.filter(r=>r.valid);
+  const disp=valid.map(r=>r.disp).filter(v=>v!=null), trav=valid.map(r=>r.trav).filter(v=>v!=null), resp=valid.map(r=>r.resp).filter(v=>v!=null);
+  const onSceneClose=R.map(r=>dtMin(r.onscene,r.close)).filter(v=>v!=null);
+  const pipe=[['Run created','dispatch record opened',N,'--accent2'],
+    ['Unit assigned',`median ${fmt(median(disp))} after the call`, median(disp),'--accent2'],
+    ['On scene',`median ${fmt(median(resp))} total response`, median(resp),'--accent'],
+    ['Cleared',`median ${fmt(median(onSceneClose))} on scene`, median(onSceneClose),'--accent']];
+  document.getElementById('pipe').innerHTML=pipe.map(([l,s,val,c],i)=>
+    `<div class="pstep" style="border-left-color:var(${c})"><div class="pl">${l}<small>${s}</small></div><div class="pn">${i===0?N:(val==null?'—':val.toFixed(1)+'m')}</div></div>`).join('');
+  let extra='';
+  if(service==='ems'){
+    const toHosp=R.map(r=>dtMin(r.onscene,r.hosp)).filter(v=>v!=null);
+    if(toHosp.length) extra=`<div class="pstep" style="border-left-color:var(--ems)"><div class="pl">At hospital<small>${toHosp.length} transported · median on-scene→ED</small></div><div class="pn">${median(toHosp).toFixed(1)}m</div></div>`;
+    document.getElementById('pipe').innerHTML+=extra;
+  }
+  // response by urgency / group
+  if(service==='ems'){
+    document.getElementById('respTab-h').textContent='Median response by urgency';
+    const order=[1,2,3,4,5,6,7,8];
+    document.getElementById('respTab').innerHTML='<tr><th>Severity</th><th>Runs</th><th>Median</th></tr>'+order.map(s=>{
+      const g=R.filter(r=>r.sev===s); if(!g.length)return''; const rr=g.filter(r=>r.resp!=null).map(r=>r.resp);
+      return `<tr><td><span class="sev-dot" style="background:${cssv(SEV[s])}"></span>${s}${s<=3?' · life-threat.':''}</td><td>${g.length}</td><td class="big">${rr.length?median(rr).toFixed(1)+' min':'—'}</td></tr>`;
+    }).join('');
+    document.getElementById('resp-note').textContent=`Based on ${valid.length} runs FDNY flags with a valid response time. Life-threatening (severity 1–3) runs get the fastest response; low-acuity runs can wait far longer.`;
+  } else {
+    document.getElementById('respTab-h').textContent='Median response by incident group';
+    const groups=[...new Set(R.map(r=>r.grp))];
+    const gr=groups.map(g=>{const set=R.filter(r=>r.grp===g);const rr=set.filter(r=>r.resp!=null).map(r=>r.resp);return [g,set.length,rr.length?median(rr):null];}).sort((a,b)=>b[1]-a[1]);
+    document.getElementById('respTab').innerHTML='<tr><th>Incident group</th><th>Runs</th><th>Median</th></tr>'+gr.map(([g,c,m])=>`<tr><td>${g}</td><td>${c}</td><td class="big">${m==null?'—':m.toFixed(1)+' min'}</td></tr>`).join('');
+    document.getElementById('resp-note').textContent=`Based on ${valid.length} runs with a valid response time. Structural fires draw the largest, fastest turnout.`;
+  }
+}
+
+document.getElementById('aibtn').onclick=()=>document.getElementById('aipop').classList.toggle('show');
+loadBtn.onclick=load;
+document.getElementById('rand').onclick=()=>{const code=ALL_CODES[Math.floor(Math.random()*ALL_CODES.length)];const day=1+Math.floor(Math.random()*450);const d=new Date(2025,0,day);if(d>new Date('2026-03-31'))d.setTime(new Date('2026-03-31').getTime());pctSel.value=code;document.getElementById('date').value=d.toISOString().slice(0,10);load();};
+window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement.tagName!=='BUTTON')load();});
+load();
+</script>
+</body>
+</html>
