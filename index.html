@@ -98,6 +98,26 @@
   .sev-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:middle}
   .hint{font-size:12px;color:var(--mut);margin-top:12px;font-style:italic}
 
+  /* dispatch-log player */
+  .player{border:1px solid var(--line2);border-radius:14px;background:var(--panel);padding:16px}
+  .prow{display:flex;align-items:center;gap:14px}
+  .playbtn{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line2);background:var(--panel2);
+    color:var(--ink);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:.15s}
+  .playbtn:hover{border-color:var(--accent);color:var(--accent)}
+  .playbtn.on{background:var(--accent);color:#1a0f0a;border-color:var(--accent)}
+  .pclock{font-family:var(--mono);font-size:24px;font-weight:680;min-width:104px;font-variant-numeric:tabular-nums}
+  .pclock small{display:block;font-size:11px;color:var(--mut);font-weight:500}
+  .player input[type=range]{width:100%;-webkit-appearance:none;height:6px;border-radius:6px;background:#3a2417;outline:none}
+  .player input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+    background:#fff;border:3px solid var(--accent);cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+  .feed{margin-top:14px;max-height:340px;overflow-y:auto;border-top:1px solid var(--line);padding-top:4px}
+  .fentry{display:grid;grid-template-columns:56px 1fr auto;gap:10px;padding:7px 4px;border-bottom:1px solid var(--line);font-size:13px;align-items:baseline}
+  .fentry .ft{font-family:var(--mono);font-weight:650;color:var(--accent2);font-size:12.5px}
+  .fentry .fr{font-family:var(--mono);color:var(--mut);font-size:11.5px;text-align:right;white-space:nowrap}
+  .fentry.new{animation:fin .7s ease}
+  @keyframes fin{0%{background:rgba(255,138,91,.28)}100%{background:transparent}}
+  .sevchip{display:inline-block;font-family:var(--mono);font-size:10px;padding:1px 7px;border-radius:12px;margin-left:8px;font-weight:650;vertical-align:1px;border:1px solid}
+  .feed-empty{color:var(--mut);font-style:italic;padding:10px 4px;font-size:13px}
   .methodbox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:22px 24px}
   .methodbox h3{font-size:15px;margin-bottom:6px} .methodbox ul{margin:0 0 16px;padding-left:18px;color:var(--mut);font-size:14px}
   .methodbox li{margin:6px 0} .methodbox b{color:var(--ink)}
@@ -146,6 +166,21 @@
 </div>
 
 <div id="app">
+<section>
+  <div class="wrap">
+    <div class="sec-h">The day as it happened</div>
+    <h2 class="sec-t">Play the dispatch log</h2>
+    <p class="sec-d">Press play to stream the day's runs in the order they came in — the radio log, reconstructed from the dispatch records. There's no map here because FDNY withholds exact locations for medical privacy; the <a href="https://joshgreenman1973.github.io/nyc-precinct-day/">police companion</a> has the animated map.</p>
+    <div class="player">
+      <div class="prow">
+        <button class="playbtn" id="pplay" aria-label="Play the day">▶</button>
+        <div class="pclock"><span id="pclock">00:00</span><small id="pcount">press play</small></div>
+        <div style="flex:1"><input type="range" id="pslider" min="0" max="86399" value="0" step="60"></div>
+      </div>
+      <div class="feed" id="feed"><div class="feed-empty">Press play to start the day at midnight, or drag the slider to any hour…</div></div>
+    </div>
+  </div>
+</section>
 <section>
   <div class="wrap">
     <div class="sec-h">The rhythm of the day</div>
@@ -219,7 +254,7 @@
 
 <script>
 /* ---- diagnostics: surface any script error visibly; ?debug=1 shows a self-test panel ---- */
-const BUILD='9 · 2026-07-01';
+const BUILD='10 · 2026-07-01';
 window.addEventListener('error',function(ev){
   var s=document.getElementById('status');
   if(s){s.className='show err';s.textContent='⚠ Page error: '+(ev.message||'unknown')+' (line '+(ev.lineno||'?')+'). Screenshot this message and report it.';}
@@ -294,7 +329,7 @@ async function load(auto){
     rows=raw.map(r=>{
       const t=(r.incident_datetime||'').slice(11,19), h=+t.slice(0,2)||0;
       const valid=r.valid_incident_rspns_time_indc==='Y';
-      return {h, dt:r.incident_datetime, valid,
+      return {h, s:(+t.slice(0,2)||0)*3600+(+t.slice(3,5)||0)*60+(+t.slice(6,8)||0), tm:t.slice(0,5), dt:r.incident_datetime, valid,
         sev:+r.initial_severity_level_code||null, ct:r.initial_call_type||'—',
         grp:r.incident_classification_group||'—', cls:r.incident_classification||'—',
         alarm:r.alarm_level_index_description||'', eng:+r.engines_assigned_quantity||0, lad:+r.ladders_assigned_quantity||0,
@@ -332,6 +367,7 @@ function render(code,date){
   service==='ems'?renderEMS(rows):renderFire(rows);
   buildHours();
   buildResponse();
+  pReset();
 }
 
 function stat(id,val){document.getElementById(id).textContent=val;}
@@ -428,6 +464,63 @@ function buildResponse(){
     document.getElementById('resp-note').textContent=`Based on ${valid.length} runs with a valid response time. Structural fires draw the largest, fastest turnout.`;
   }
 }
+
+/* ---------- dispatch-log player: streams runs at their actual timestamps ---------- */
+const P={cursor:0,timer:null,idx:0};
+const FEED_CAP=80;
+function fentryHTML(r){
+  let mid, chip='';
+  if(service==='ems'){
+    mid=emsLabel(r.ct);
+    if(r.sev){const c=cssv(SEV[r.sev]||'--s8');chip=`<span class="sevchip" style="color:${c};border-color:${c}">SEV ${r.sev}</span>`;}
+  }else{
+    mid=r.cls;
+    const c=/structural/i.test(r.grp)?cssv('--fire'):cssv('--accent2');
+    chip=`<span class="sevchip" style="color:${c};border-color:${c}">${r.grp.toUpperCase()}</span>`;
+  }
+  const right=r.resp!=null?r.resp.toFixed(0)+' min to scene':'—';
+  return `<div class="ft">${r.tm}</div><div>${mid}${chip}</div><div class="fr">${right}</div>`;
+}
+function pClock(){
+  const h=Math.floor(P.cursor/3600),m=Math.floor((P.cursor%3600)/60);
+  document.getElementById('pclock').textContent=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+  document.getElementById('pcount').textContent=P.idx+' run'+(P.idx===1?'':'s')+' so far';
+  const pct=P.cursor/86399*100;
+  document.getElementById('pslider').style.background=`linear-gradient(90deg,var(--accent) ${pct}%,#3a2417 ${pct}%)`;
+}
+function pAdvanceTo(cur,animate){
+  const feed=document.getElementById('feed');
+  if(feed.querySelector('.feed-empty')&&P.idx<rows.length&&rows[P.idx].s<=cur) feed.innerHTML='';
+  while(P.idx<rows.length&&rows[P.idx].s<=cur){
+    const d=document.createElement('div'); d.className='fentry'+(animate?' new':'');
+    d.innerHTML=fentryHTML(rows[P.idx]); feed.prepend(d); P.idx++;
+  }
+  while(feed.children.length>FEED_CAP) feed.removeChild(feed.lastChild);
+  P.cursor=cur; pClock();
+}
+function pRebuild(cur){
+  const feed=document.getElementById('feed'); feed.innerHTML=''; P.idx=0; P.cursor=0;
+  pAdvanceTo(cur,false);
+  if(!feed.children.length) feed.innerHTML='<div class="feed-empty">No runs yet by this time of day — drag further or press play.</div>';
+}
+function pStop(){if(P.timer){clearInterval(P.timer);P.timer=null;}const b=document.getElementById('pplay');b.textContent='▶';b.classList.remove('on');}
+function pPlay(){
+  if(P.cursor>=86399) pRebuild(0);
+  const b=document.getElementById('pplay'); b.textContent='❚❚'; b.classList.add('on');
+  /* wall-clock pacing (whole day in ~20s) so throttled timers can't stall playback */
+  const c0=P.cursor, t0=Date.now();
+  P.timer=setInterval(()=>{
+    const next=Math.min(c0+(Date.now()-t0)*4.4,86399);
+    pAdvanceTo(next,true);
+    document.getElementById('pslider').value=next;
+    if(next>=86399) pStop();
+  },90);
+}
+function pReset(){pStop();P.cursor=0;P.idx=0;document.getElementById('pslider').value=0;
+  document.getElementById('feed').innerHTML='<div class="feed-empty">Press play to start the day at midnight, or drag the slider to any hour…</div>';pClock();
+  document.getElementById('pcount').textContent='press play';}
+document.getElementById('pplay').onclick=()=>{P.timer?pStop():pPlay();};
+document.getElementById('pslider').oninput=e=>{pStop();pRebuild(+e.target.value);};
 
 document.getElementById('aibtn').onclick=()=>document.getElementById('aipop').classList.toggle('show');
 loadBtn.onclick=()=>load();
