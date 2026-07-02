@@ -134,7 +134,7 @@
   <div class="wrap">
     <div class="kicker"><span class="dot"></span> Live from NYC Open Data · FDNY</div>
     <h1 class="title">A day on the fire &amp; medical radio</h1>
-    <p class="sub">Pick any New York City police precinct and any day, and this pulls every FDNY run there that day — ambulances and fire units — from the city's own dispatch records, and rebuilds the timeline, the call mix and the response-time breakdown. The companion to the police version.</p>
+    <p class="sub">Pick any New York City police precinct and any day, and this pulls every FDNY (Fire Department of the City of New York) run there that day — ambulances and fire units — from the city's own dispatch records, and rebuilds the timeline, the call mix and the response-time breakdown. The companion to the police version.</p>
     <a class="xlink" href="https://joshgreenman1973.github.io/nyc-precinct-day/">← See the police 911 version of this day</a>
   </div>
 </header>
@@ -145,7 +145,7 @@
       <div class="field"><label for="pct">Precinct</label><select id="pct"></select></div>
       <div class="field"><label for="date">Date</label><input type="date" id="date" min="2020-01-01" max="2026-03-31" value="2025-12-17"></div>
       <div class="field"><label>Service</label>
-        <div class="seg"><button id="svc-ems" class="on">🚑 EMS (medical)</button><button id="svc-fire">🚒 Fire</button></div>
+        <div class="seg"><button id="svc-ems" class="on" title="Emergency Medical Services — ambulances">🚑 EMS (ambulance)</button><button id="svc-fire">🚒 Fire</button></div>
       </div>
       <button class="loadbtn" id="load">Load the day</button>
       <button class="randbtn" id="rand" title="Random precinct and day">🎲 Surprise me</button>
@@ -170,7 +170,7 @@
   <div class="wrap">
     <div class="sec-h">The day as it happened</div>
     <h2 class="sec-t">Play the dispatch log</h2>
-    <p class="sec-d">Press play to stream the day's runs in the order they came in — the radio log, reconstructed from the dispatch records. There's no map here because FDNY withholds exact locations for medical privacy; the <a href="https://joshgreenman1973.github.io/nyc-precinct-day/">police companion</a> has the animated map.</p>
+    <p class="sec-d">Press play to stream the day's runs in the order they came in — the radio log, reconstructed from the dispatch records. EMS stands for Emergency Medical Services (the ambulances). There's no map here because FDNY withholds exact locations for medical privacy; the <a href="https://joshgreenman1973.github.io/nyc-precinct-day/">police companion</a> has the animated map.</p>
     <div class="player">
       <div class="prow">
         <button class="playbtn" id="pplay" aria-label="Play the day">▶</button>
@@ -231,7 +231,7 @@
         <li><b>No map.</b> FDNY dispatch records are <b>not geocoded to a point</b> (medical privacy); location is ZIP + precinct only. So this companion leads with time and response, not a dot map.</li>
         <li><b>Response time</b> = incident-created to first-unit-on-scene, using FDNY's own response-second fields, for runs FDNY flags as having a valid response time.</li>
         <li><b>EMS urgency (severity 1–8):</b> 1 is most life-threatening, 8 least. This is FDNY's assignment; the data bears it out — severity 1–3 runs reach the scene in single-digit-to-low-double-digit minutes, while 4+ can wait far longer. “Life-threatening” here means severity 1–3.</li>
-        <li><b>EMS call types</b> use FDNY's initial call-type codes; plain-language labels are shown for the common ones, the raw code otherwise.</li>
+        <li><b>EMS call types</b> are FDNY's own initial call-type codes; the plain-language meaning shown next to each (e.g. “Abdominal pain (ABDPN)”) comes from FDNY's official <a href="https://data.cityofnewyork.us/Public-Safety/EMS-Incident-Dispatch-Data/76xm-jjuj">Call Type Descriptions</a> file. A handful of operational codes (e.g. CARDBR) have no published description and appear as the raw code. The call type reflects what the caller reported, not the patient's actual condition.</li>
         <li><b>Medians, not means</b> — a long tail of low-acuity runs badly skews the averages.</li>
         <li><b>No outcomes.</b> These records carry response and disposition timing, but no patient outcome, and are not linked to the police calls at the record level.</li>
       </ul>
@@ -254,7 +254,7 @@
 
 <script>
 /* ---- diagnostics: surface any script error visibly; ?debug=1 shows a self-test panel ---- */
-const BUILD='10 · 2026-07-01';
+const BUILD='11 · 2026-07-01';
 window.addEventListener('error',function(ev){
   var s=document.getElementById('status');
   if(s){s.className='show err';s.textContent='⚠ Page error: '+(ev.message||'unknown')+' (line '+(ev.lineno||'?')+'). Screenshot this message and report it.';}
@@ -291,8 +291,42 @@ pctSel.value='75';
 function ordinal(c){const s=['th','st','nd','rd'],v=c%100;return c+(s[(v-20)%10]||s[v]||s[0]);}
 const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
-const EMS_LABELS={INJURY:'Injury',SICK:'Sick / illness',EDPC:'Psychiatric',EDP:'Psychiatric',CARD:'Cardiac condition',DIFFBR:'Difficulty breathing',ABDPN:'Abdominal pain',UNKNOW:'Unknown condition',UNC:'Unconscious',UNCON:'Unconscious',DRUG:'Drug / overdose',MVA:'Vehicle accident',INJMAJ:'Major injury',INJMIN:'Minor injury',CVA:'Stroke',CVAC:'Stroke',CHOKE:'Choking',ALTMEN:'Altered mental status',ARREST:'Cardiac arrest',RESPIR:'Respiratory distress',STNDBY:'Standby',STANDBY:'Standby',SHOT:'Shooting',STAB:'Stabbing',DROWN:'Drowning',ALLERG:'Allergic reaction',DIABET:'Diabetic',ASTHMB:'Asthma',ASTHMA:'Asthma',SEIZ:'Seizure',SEIZR:'Seizure',SEIZUR:'Seizure',INBLED:'Bleeding',ANAPH:'Anaphylaxis'};
-function emsLabel(code){return EMS_LABELS[code]||code;}
+/* Plain-language meanings from FDNY's official "Call Type Descriptions" file (dataset 76xm-jjuj). */
+const EMS_DESC={
+  INJURY:'Injury (non-critical)',INJMAJ:'Major injury',INJMIN:'Minor injury',TRAUMA:'Multiple trauma',
+  SICK:'Sick',SICMIN:'Minor illness',SICPED:'Sick child (under 5)',UNKNOW:'Unknown — caller had no medical info',OTHER:'Unknown condition',
+  UNC:'Unconscious',ALTMEN:'Altered mental status',ARREST:'Cardiac arrest',CARD:'Cardiac condition',HEART:'Cardiac condition',
+  CHESTP:'Chest pain',DIFFBR:'Difficulty breathing',RESPIR:'Respiratory distress',SOB:'Shortness of breath',CHOKE:'Choking',
+  ABDPN:'Abdominal pain',BACKPN:'Back pain',HEADPN:'Headache',HDACHE:'Headache',NAUSEA:'Nausea',FEVER:'Fever',
+  DRUG:'Drug or alcohol',POISON:'Poisoning',INGEST:'Poisoning / ingestion',DIAB:'Diabetic',HYPTN:'Hypertension',MEDRXN:'Medication reaction',
+  EDP:'Psychiatric',STATEP:'Status epilepticus (prolonged seizure)',SEIZR:'Seizure',SEIZ:'Seizure',CVA:'Stroke',CVAC:'Stroke',
+  ANAPH:'Anaphylaxis',ALLERG:'Allergic reaction',ASTHMB:'Asthma attack',ASTHMA:'Asthma',ASTHMP:'Asthma (child)',ASTHMC:'Asthma (critical)',
+  INBLED:'Internal bleeding',BLEED:'Bleeding',WOUND:'Wound',STAB:'Stabbing',SHOT:'Gunshot wound',
+  MVAINJ:'Auto accident with injuries',MVA:'Auto accident (no confirmed injury)',PEDSTR:'Pedestrian struck',
+  BURNMA:'Major burns',BURNMI:'Minor burns',BURN:'Burn',INHALE:'Smoke inhalation',ELECT:'Electrocution',
+  HEAT:'Heat exhaustion',COLD:'Hypothermia',FROST:'Frostbite',DROWN:'Drowning',VENOM:'Venomous bite (snake)',BITE:'Bite',
+  OBLAB:'In labor',LABOR:'In labor',OBOUT:'Birth imminent',OBMAJ:'Major obstetric complaint',OBCOMP:'Obstetric complications',
+  OBMIS:'Miscarriage',GYNHEM:'Gynecological bleeding (not pregnant)',GYNMAJ:'Gynecological — severe pain or bleeding',
+  AMPMAJ:'Amputation (arm, hand, leg or foot)',AMPMIN:'Amputation (fingers or toes)',EYEINJ:'Eye injury',FX:'Fracture',
+  CHILDA:'Child abuse',RAPE:'Rape',HANG:'Hanging',JUMPUP:'Jumper (up)',JUMPDN:'Jumper (down)',
+  CPR:'CPR in progress',DOA:'Death (confirmed by medical authority)',DDOA:'Death (confirmed by medical authority)',
+  PD13C:'Police officer needs help (10-13, confirmed)',PD13:'Police officer needs help (10-13, unconfirmed)',
+  STNDBY:'Stand-by request',STANDBY:'Stand-by request',SPEVNT:'Special event',ACTIVE:'Active shooter',MEDVAC:'Medevac',
+  MCI21:'One-alarm fire',MCI22:'Two-alarm fire',MCI23:'Three-alarm fire',DIALYS:'Dialysis'
+};
+/* Show "Description (CODE)" for cryptic codes; drop the parenthetical when the code is
+   just the plain word (e.g. SICK, STABBING). Falls back to the raw FDNY code if unlisted. */
+function emsLabel(code){
+  const c=(code||'').toUpperCase().trim();
+  let desc=EMS_DESC[c];
+  if(!desc){
+    if(c.startsWith('CARD')) desc='Cardiac';
+    else if(c.startsWith('EDP')) desc='Psychiatric';
+    else return c;
+  }
+  const letters=desc.toUpperCase().replace(/[^A-Z]/g,'');
+  return letters.startsWith(c) ? desc : `${desc} (${c})`;
+}
 const SEV={1:'--s1',2:'--s2',3:'--s3',4:'--s4',5:'--s5',6:'--s6',7:'--s7',8:'--s8'};
 
 function median(a){if(!a.length)return null;const s=[...a].sort((x,y)=>x-y);const m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2;}
