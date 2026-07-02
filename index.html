@@ -139,7 +139,10 @@
     <div class="kicker"><span class="dot"></span> Live from NYC Open Data · FDNY</div>
     <h1 class="title">A day on the fire &amp; medical radio</h1>
     <p class="sub">Pick any New York City police precinct and any day, and this pulls every FDNY (Fire Department of the City of New York) run there that day — ambulances and fire units — from the city's own dispatch records, and rebuilds the timeline, the call mix and the response-time breakdown. The companion to the police version.</p>
-    <a class="xlink" href="https://joshgreenman1973.github.io/nyc-precinct-day/">← See the police 911 version of this day</a>
+    <div class="xlinks" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:16px">
+      <a class="xlink" href="https://joshgreenman1973.github.io/nyc-precinct-day/">🚓 Police 911 version →</a>
+      <a class="xlink" href="https://joshgreenman1973.github.io/nyc-311-day/">☎️ 311 service-request version →</a>
+    </div>
   </div>
 </header>
 
@@ -263,7 +266,7 @@
 
 <script>
 /* ---- diagnostics: surface any script error visibly; ?debug=1 shows a self-test panel ---- */
-const BUILD='12 · 2026-07-01';
+const BUILD='13 · 2026-07-01';
 window.addEventListener('error',function(ev){
   var s=document.getElementById('status');
   if(s){s.className='show err';s.textContent='⚠ Page error: '+(ev.message||'unknown')+' (line '+(ev.lineno||'?')+'). Screenshot this message and report it.';}
