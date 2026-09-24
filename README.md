@@ -13,7 +13,7 @@ timeline, the call mix and the response-time breakdown. The companion to the
 - **Fire:** FDNY [Fire Incident Dispatch Data](https://data.cityofnewyork.us/Public-Safety/Fire-Incident-Dispatch-Data/8m42-w767) (`8m42-w767`).
 - Both carry a `policeprecinct` field, so runs filter to the same precincts as the police version.
 - Queried live in the browser for the precinct, date and service you choose.
-- **Coverage:** through March 31, 2026 — fresher than the police calls feed (which ends Dec 2025).
+- **Coverage:** January 2020 through the latest published month (June 30, 2026, as of Sept. 23, 2026); the date picker reads the datasets' latest date on load.
 
 ## Method & limits
 

@@ -151,14 +151,14 @@
   <div class="wrap">
     <div class="cbrow">
       <div class="field"><label for="pct">Precinct</label><select id="pct"></select></div>
-      <div class="field"><label for="date">Date</label><input type="date" id="date" min="2020-01-01" max="2026-03-31" value="2025-12-17"></div>
+      <div class="field"><label for="date">Date</label><input type="date" id="date" min="2020-01-01" max="2026-06-30" value="2025-12-17"></div>
       <div class="field"><label>Service</label>
         <div class="seg"><button id="svc-ems" class="on" title="Emergency Medical Services — ambulances">🚑 EMS (ambulance)</button><button id="svc-fire">🚒 Fire</button></div>
       </div>
       <button class="loadbtn" id="load">Load the day</button>
       <button class="randbtn" id="rand" title="Random precinct and day">🎲 Surprise me</button>
     </div>
-    <div class="cbnote">Data available through March 31, 2026. Source: FDNY EMS &amp; Fire Incident Dispatch Data, NYC Open Data.</div>
+    <div class="cbnote" id="cbnote">Data available through June 30, 2026. Source: FDNY EMS &amp; Fire Incident Dispatch Data, NYC Open Data.</div>
   </div>
 </div>
 
@@ -236,8 +236,9 @@
       <h3>Source &amp; method</h3>
       <ul>
         <li><b>Data:</b> FDNY <b>EMS Incident Dispatch Data</b> (<span class="mono">76xm-jjuj</span>) and <b>Fire Incident Dispatch Data</b> (<span class="mono">8m42-w767</span>), NYC Open Data. Both carry a <span class="mono">policeprecinct</span> field, so runs filter to the same precincts as the police version. Queried live for your selection.</li>
-        <li><b>Coverage:</b> through March 31, 2026 — fresher than the police calls feed (which ends Dec 2025), so days after that have no police counterpart to compare.</li>
+        <li><b>Coverage:</b> January 2020 through the latest month the city has published (June 30, 2026, as of September 2026; the date picker updates itself when newer months appear). The police version covers the same recent months, so any day here has a police counterpart.</li>
         <li id="m-current"></li>
+        <li><b>116th Precinct:</b> the police split it off from the 105th in December 2024, and the Fire Department's fire data uses it. The EMS data mostly does not: in the first half of 2026 it filed only 160 medical runs under the 116th against 12,819 under the 105th. For southeast Queens medical calls, pick the 105th.</li>
       </ul>
       <h3>Definitions &amp; caveats</h3>
       <ul>
@@ -267,12 +268,17 @@
 
 <script>
 /* ---- diagnostics: surface any script error visibly; ?debug=1 shows a self-test panel ---- */
-const BUILD='14 · 2026-07-01';
+const BUILD='15 · 2026-09-23';
 window.addEventListener('error',function(ev){
   var s=document.getElementById('status');
   if(s){s.className='show err';s.textContent='⚠ Page error: '+(ev.message||'unknown')+' (line '+(ev.lineno||'?')+'). Screenshot this message and report it.';}
 });
 window.addEventListener('DOMContentLoaded',function(){
+  Promise.all(['76xm-jjuj','8m42-w767'].map(function(id){return fetch('https://data.cityofnewyork.us/resource/'+id+'.json?$select=max(incident_datetime)%20as%20m').then(function(r){return r.json();});}))
+    .then(function(js){var ms=js.map(function(j){return j&&j[0]&&j[0].m?j[0].m.slice(0,10):'';});var m=ms.sort()[0];var di=document.getElementById('date');
+      if(m&&m>di.max){di.max=m;var n=document.getElementById('cbnote');
+        if(n)n.textContent='Data available through '+new Date(m+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+'. Source: FDNY EMS & Fire Incident Dispatch Data, NYC Open Data.';}})
+    .catch(function(){});
   var b=document.getElementById('buildstamp'); if(b) b.textContent='build '+BUILD;
   if(/debug/.test(location.search)){
     var d=document.createElement('div');
@@ -293,7 +299,7 @@ const PRECINCTS=[
  ['Manhattan',[[1,'Financial District / Battery Park'],[5,'Chinatown / Little Italy'],[6,'West Village'],[7,'Lower East Side'],[9,'East Village'],[10,'Chelsea / Hudson Yards'],[13,'Gramercy / Flatiron'],[14,'Midtown South / Times Square'],[17,'Murray Hill / Turtle Bay'],[18,"Midtown North / Hell's Kitchen"],[19,'Upper East Side'],[20,'Upper West Side'],[22,'Central Park'],[23,'East Harlem South'],[24,'Manhattan Valley'],[25,'East Harlem North'],[26,'Morningside Heights'],[28,'Central Harlem South'],[30,'Hamilton Heights'],[32,'Central Harlem North'],[33,'Washington Heights South'],[34,'Washington Heights / Inwood']]],
  ['Bronx',[[40,'Mott Haven / Melrose'],[41,'Hunts Point'],[42,'Morrisania / Claremont'],[43,'Soundview / Parkchester'],[44,'Highbridge / Concourse'],[45,'Throgs Neck / Co-op City'],[46,'Fordham / University Heights'],[47,'Wakefield / Williamsbridge'],[48,'Belmont / East Tremont'],[49,'Pelham Parkway / Morris Park'],[50,'Riverdale / Kingsbridge'],[52,'Bedford Park / Norwood']]],
  ['Brooklyn',[[60,'Coney Island'],[61,'Sheepshead Bay / Gravesend'],[62,'Bensonhurst / Bath Beach'],[63,'Flatlands / Mill Basin'],[66,'Borough Park'],[67,'East Flatbush'],[68,'Bay Ridge / Dyker Heights'],[69,'Canarsie'],[70,'Flatbush / Midwood'],[71,'Crown Heights South'],[72,'Sunset Park / Windsor Terrace'],[73,'Brownsville'],[75,'East New York / Cypress Hills'],[76,'Red Hook / Carroll Gardens'],[77,'Prospect Heights / Crown Heights'],[78,'Park Slope'],[79,'Bedford-Stuyvesant South'],[81,'Stuyvesant Heights'],[83,'Bushwick'],[84,'Downtown Brooklyn / Brooklyn Heights'],[88,'Fort Greene / Clinton Hill'],[90,'Williamsburg South'],[94,'Greenpoint']]],
- ['Queens',[[100,'Rockaway'],[101,'Far Rockaway'],[102,'Richmond Hill / Woodhaven'],[103,'Jamaica'],[104,'Ridgewood / Glendale / Maspeth'],[105,'Queens Village / Rosedale'],[106,'Ozone Park / Howard Beach'],[107,'Fresh Meadows / Briarwood'],[108,'Long Island City / Sunnyside'],[109,'Flushing / College Point'],[110,'Elmhurst / Corona'],[111,'Bayside / Douglaston'],[112,'Forest Hills / Rego Park'],[113,'St. Albans / Springfield Gardens'],[114,'Astoria / Long Island City'],[115,'Jackson Heights / East Elmhurst']]],
+ ['Queens',[[100,'Rockaway'],[101,'Far Rockaway'],[102,'Richmond Hill / Woodhaven'],[103,'Jamaica'],[104,'Ridgewood / Glendale / Maspeth'],[105,'Queens Village / Rosedale'],[106,'Ozone Park / Howard Beach'],[107,'Fresh Meadows / Briarwood'],[108,'Long Island City / Sunnyside'],[109,'Flushing / College Point'],[110,'Elmhurst / Corona'],[111,'Bayside / Douglaston'],[112,'Forest Hills / Rego Park'],[113,'St. Albans / Springfield Gardens'],[114,'Astoria / Long Island City'],[115,'Jackson Heights / East Elmhurst'],[116,'Southeast Queens (split from the 105th, Dec. 2024)']]],
  ['Staten Island',[[120,'St. George / Stapleton'],[121,'Graniteville / Mariners Harbor'],[122,'New Dorp / South Beach'],[123,'Tottenville / Great Kills']]],
 ];
 const PCT_NAME={},PCT_BORO={},ALL_CODES=[];
@@ -576,7 +582,7 @@ document.getElementById('pslider').oninput=e=>{pStop();pRebuild(+e.target.value)
 
 document.getElementById('aibtn').onclick=()=>document.getElementById('aipop').classList.toggle('show');
 loadBtn.onclick=()=>load();
-document.getElementById('rand').onclick=()=>{const code=ALL_CODES[Math.floor(Math.random()*ALL_CODES.length)];const day=1+Math.floor(Math.random()*450);const d=new Date(2025,0,day);if(d>new Date('2026-03-31'))d.setTime(new Date('2026-03-31').getTime());pctSel.value=code;document.getElementById('date').value=d.toISOString().slice(0,10);load();};
+document.getElementById('rand').onclick=()=>{const code=ALL_CODES[Math.floor(Math.random()*ALL_CODES.length)];const day=1+Math.floor(Math.random()*450);const d=new Date(2025,0,day);{const mx=new Date(document.getElementById('date').max);if(d>mx)d.setTime(mx.getTime());}pctSel.value=code;document.getElementById('date').value=d.toISOString().slice(0,10);load();};
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement.tagName!=='BUTTON')load();});
 load(true);
 </script>
