@@ -268,7 +268,7 @@
 
 <script>
 /* ---- diagnostics: surface any script error visibly; ?debug=1 shows a self-test panel ---- */
-const BUILD='15 · 2026-09-23';
+const BUILD='16 · 2026-09-26';
 window.addEventListener('error',function(ev){
   var s=document.getElementById('status');
   if(s){s.className='show err';s.textContent='⚠ Page error: '+(ev.message||'unknown')+' (line '+(ev.lineno||'?')+'). Screenshot this message and report it.';}
@@ -305,7 +305,7 @@ const PRECINCTS=[
 const PCT_NAME={},PCT_BORO={},ALL_CODES=[];
 PRECINCTS.forEach(([boro,list])=>list.forEach(([c,n])=>{PCT_NAME[c]=n;PCT_BORO[c]=boro;ALL_CODES.push(c);}));
 const pctSel=document.getElementById('pct');
-PRECINCTS.forEach(([boro,list])=>{const og=document.createElement('optgroup');og.label=boro;list.forEach(([c,n])=>{const o=document.createElement('option');o.value=c;o.textContent=`${c}th — ${n}`;og.appendChild(o);});pctSel.appendChild(og);});
+PRECINCTS.forEach(([boro,list])=>{const og=document.createElement('optgroup');og.label=boro;list.forEach(([c,n])=>{const o=document.createElement('option');o.value=c;o.textContent=`${ordinal(c)} — ${n}`;og.appendChild(o);});pctSel.appendChild(og);});
 pctSel.value='75';
 function ordinal(c){const s=['th','st','nd','rd'],v=c%100;return c+(s[(v-20)%10]||s[v]||s[0]);}
 const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
