@@ -151,14 +151,14 @@
   <div class="wrap">
     <div class="cbrow">
       <div class="field"><label for="pct">Precinct</label><select id="pct"></select></div>
-      <div class="field"><label for="date">Date</label><input type="date" id="date" min="2020-01-01" max="2026-06-30" value="2025-12-17"></div>
+      <div class="field"><label for="date">Date</label><input type="date" id="date" min="2020-01-01" max="2026-09-30" value="2025-12-17"></div>
       <div class="field"><label>Service</label>
         <div class="seg"><button id="svc-ems" class="on" title="Emergency Medical Services — ambulances">🚑 EMS (ambulance)</button><button id="svc-fire">🚒 Fire</button></div>
       </div>
       <button class="loadbtn" id="load">Load the day</button>
       <button class="randbtn" id="rand" title="Random precinct and day">🎲 Surprise me</button>
     </div>
-    <div class="cbnote" id="cbnote">Data available through June 30, 2026. Source: FDNY EMS &amp; Fire Incident Dispatch Data, NYC Open Data.</div>
+    <div class="cbnote" id="cbnote">Data available through September 30, 2026. Source: FDNY EMS &amp; Fire Incident Dispatch Data, NYC Open Data.</div>
   </div>
 </div>
 
@@ -236,9 +236,9 @@
       <h3>Source &amp; method</h3>
       <ul>
         <li><b>Data:</b> FDNY <b>EMS Incident Dispatch Data</b> (<span class="mono">76xm-jjuj</span>) and <b>Fire Incident Dispatch Data</b> (<span class="mono">8m42-w767</span>), NYC Open Data. Both carry a <span class="mono">policeprecinct</span> field, so runs filter to the same precincts as the police version. Queried live for your selection.</li>
-        <li><b>Coverage:</b> January 2020 through the latest month the city has published (June 30, 2026, as of September 2026; the date picker updates itself when newer months appear). The police version covers the same recent months, so any day here has a police counterpart.</li>
+        <li><b>Coverage:</b> January 2020 through the latest month the city has published (Sept. 30, 2026, as of October 2026; the date picker updates itself when newer months appear). The police version runs only through June 30, 2026, so days from July 2026 on have no police counterpart yet.</li>
         <li id="m-current"></li>
-        <li><b>116th Precinct:</b> the police split it off from the 105th in December 2024, and the Fire Department's fire data uses it. The EMS data mostly does not: in the first half of 2026 it filed only 160 medical runs under the 116th against 12,819 under the 105th. For southeast Queens medical calls, pick the 105th.</li>
+        <li><b>116th Precinct:</b> the police split it off from the 105th in December 2024, and the Fire Department's fire data uses it. The EMS data mostly does not: in the first nine months of 2026 it filed only 236 medical runs under the 116th against 19,213 under the 105th. For southeast Queens medical calls, pick the 105th.</li>
       </ul>
       <h3>Definitions &amp; caveats</h3>
       <ul>
@@ -268,7 +268,7 @@
 
 <script>
 /* ---- diagnostics: surface any script error visibly; ?debug=1 shows a self-test panel ---- */
-const BUILD='16 · 2026-09-26';
+const BUILD='17 · 2026-10-14';
 window.addEventListener('error',function(ev){
   var s=document.getElementById('status');
   if(s){s.className='show err';s.textContent='⚠ Page error: '+(ev.message||'unknown')+' (line '+(ev.lineno||'?')+'). Screenshot this message and report it.';}
